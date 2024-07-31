@@ -118,26 +118,24 @@ local function toggleScript(state)
         StartScript() -- Call the main function when enabling
     else
         statusLabel.Text = "Status: Script Stopped"
-        StopScript() -- Call the stop function when disabling
     end
 end
 
 -- Main function that runs when script is enabled
 local function StartScript()
     while enabled do
-        -- Main script logic (e.g., shooting and reloading)
-        local rifle = game:GetService("Players").LocalPlayer.Character:FindFirstChild("Rifle")
+        local rifle = player.Character and player.Character:FindFirstChild("Rifle") -- ตรวจสอบชื่อของอาวุธที่ถูกต้อง
         local searchName = searchBox.Text
+
         if rifle and rifle:FindFirstChild("Shoot") and rifle:FindFirstChild("Reload") then
             local targetFound = false
-            for i, v in pairs(game:GetService("Workspace").Mobs.KingSandpod:GetChildren()) do
-                if v.Name == searchName and v:FindFirstChild("HumanoidRootPart") then
+            for _, mob in pairs(game:GetService("Workspace").Mobs:GetChildren()) do -- ตรวจสอบโครงสร้างของ Workspace
+                if mob.Name == searchName and mob:FindFirstChild("HumanoidRootPart") then
                     targetFound = true
-                    targetNameLabel.Text = "Target: " .. v.Name
-                    positionLabel.Text = "Position: " .. tostring(v.HumanoidRootPart.Position)
-                    local args = {
-                        [1] = v.HumanoidRootPart.Position
-                    }
+                    targetNameLabel.Text = "Target: " .. mob.Name
+                    positionLabel.Text = "Position: " .. tostring(mob.HumanoidRootPart.Position)
+                    
+                    local args = { [1] = mob.HumanoidRootPart.Position }
                     -- Use Rifle to shoot
                     rifle.Shoot:Fire(unpack(args))
 
@@ -162,11 +160,6 @@ local function StartScript()
     end
 end
 
--- Function to stop the script
-local function StopScript()
-    -- The while loop in StartScript will stop when enabled is false
-end
-
 -- Function to toggle the UI visibility
 local function toggleUI()
     frame.Visible = not frame.Visible
@@ -176,6 +169,15 @@ end
 local function toggleFold()
     if uiFolded then
         frame.Size = UDim2.new(0, 300, 0, 350)  -- Expand the UI to original size
+        frame.Position = UDim2.new(0.5, -150, 0.5, -175)
         foldButton.Text = "+"
     else
-        frame.Size
+        frame.Size = UDim2.new(0, 50, 0, 350)  -- Fold the UI to only show the buttons
+        frame.Position = UDim2.new(0.5, -25, 0.5, -175)
+        foldButton.Text = "-"
+    end
+    uiFolded = not uiFolded
+end
+
+-- Connect button actions
+startButton.MouseButton1Click:Connect
