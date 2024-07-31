@@ -9,34 +9,50 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "MainUI"
 screenGui.Parent = localPlayer.PlayerGui
 
+-- Create Player UI Frame
+local playerFrame = Instance.new("Frame")
+playerFrame.Name = "PlayerFrame"
+playerFrame.Size = UDim2.new(0, 200, 0, 200)
+playerFrame.Position = UDim2.new(0, 10, 0, 10)
+playerFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+playerFrame.Parent = screenGui
+
+-- Create Bot UI Frame
+local botFrame = Instance.new("Frame")
+botFrame.Name = "BotFrame"
+botFrame.Size = UDim2.new(0, 200, 0, 200)
+botFrame.Position = UDim2.new(0, 220, 0, 10)
+botFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+botFrame.Parent = screenGui
+
 -- Create Toggle Auto-Farm Button
 local toggleButton = Instance.new("TextButton")
 toggleButton.Name = "ToggleAutoFarmButton"
 toggleButton.Size = UDim2.new(0, 150, 0, 40)
-toggleButton.Position = UDim2.new(0, 10, 0, 10)
+toggleButton.Position = UDim2.new(0, 25, 0, 10)
 toggleButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
 toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 toggleButton.Text = "เปิด/ปิด ออโต้ฟาร์ม"
 toggleButton.Font = Enum.Font.SourceSans
 toggleButton.TextSize = 14
-toggleButton.Parent = screenGui
+toggleButton.Parent = playerFrame
 
 -- Create Lock Target Button
 local lockTargetButton = Instance.new("TextButton")
 lockTargetButton.Name = "LockTargetButton"
 lockTargetButton.Size = UDim2.new(0, 150, 0, 40)
-lockTargetButton.Position = UDim2.new(0, 10, 0, 60)
+lockTargetButton.Position = UDim2.new(0, 25, 0, 60)
 lockTargetButton.BackgroundColor3 = Color3.fromRGB(0, 0, 200)
 lockTargetButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 lockTargetButton.Text = "ล็อกเป้าหมาย"
 lockTargetButton.Font = Enum.Font.SourceSans
 lockTargetButton.TextSize = 14
-lockTargetButton.Parent = screenGui
+lockTargetButton.Parent = playerFrame
 
 -- Create Status Label
 local statusLabel = Instance.new("TextLabel")
 statusLabel.Name = "StatusLabel"
-statusLabel.Size = UDim2.new(0, 310, 0, 30)
+statusLabel.Size = UDim2.new(0, 180, 0, 30)
 statusLabel.Position = UDim2.new(0, 10, 0, 110)
 statusLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 statusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -44,26 +60,27 @@ statusLabel.Text = "สถานะ: พร้อมใช้งาน"
 statusLabel.Font = Enum.Font.SourceSans
 statusLabel.TextSize = 14
 statusLabel.TextXAlignment = Enum.TextXAlignment.Left
-statusLabel.Parent = screenGui
+statusLabel.Parent = playerFrame
 
 -- Create Nearest Target Label
 local nearestTargetLabel = Instance.new("TextLabel")
 nearestTargetLabel.Name = "NearestTargetLabel"
-nearestTargetLabel.Size = UDim2.new(0, 310, 0, 30)
-nearestTargetLabel.Position = UDim2.new(0, 10, 0, 150)
+nearestTargetLabel.Size = UDim2.new(0, 180, 0, 30)
+nearestTargetLabel.Position = UDim2.new(0, 10, 0, 10)
 nearestTargetLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 nearestTargetLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 nearestTargetLabel.Text = "เป้าหมายใกล้เคียง: ไม่มี"
 nearestTargetLabel.Font = Enum.Font.SourceSans
 nearestTargetLabel.TextSize = 14
 nearestTargetLabel.TextXAlignment = Enum.TextXAlignment.Left
-nearestTargetLabel.Parent = screenGui
+nearestTargetLabel.Parent = botFrame
 
 -- Variables
 local shootingReady = false
 local reloading = false
 local autoFarm = false
 local lockTarget = false
+local debounce = false
 
 -- Function to find the nearest player
 local function findNearestPlayer()
@@ -121,16 +138,21 @@ local function startAiming()
 end
 
 -- Function to shoot
-local function shoot()
+local function shoot(target)
     if not shootingReady or reloading then
         return
     end
     shootingReady = false
 
-    local nearestPlayer = findNearestPlayer()
-    if nearestPlayer then
-        statusLabel.Text = "สถานะ: ยิงไปที่เป้าหมาย: " .. nearestPlayer.Name
-        -- Add shooting logic here
+    if target then
+        statusLabel.Text = "สถานะ: ยิงไปที่เป้าหมาย"
+        -- Add shooting logic here, for example:
+        local tool = localPlayer.Character:FindFirstChildOfClass("Tool")
+        if tool and tool:FindFirstChild("Handle") then
+            local handle = tool.Handle
+            handle.CFrame = CFrame.new(handle.Position, target.Position)
+            handle.Fire:Play() -- This line assumes the tool has a Fire method or sound, adjust as needed
+        end
         reload()
     else
         statusLabel.Text = "สถานะ: ไม่พบเป้าหมายที่จะยิง."
@@ -161,65 +183,45 @@ end
 
 -- Toggle auto-farming
 toggleButton.MouseButton1Click:Connect(function()
+    if debounce then return end
+    debounce = true
+
     autoFarm = not autoFarm
     if autoFarm then
         statusLabel.Text = "สถานะ: ออโต้ฟาร์มเปิดใช้งาน"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
+        spawn(autoFarmLoop) -- Start the auto-farming loop
     else
         statusLabel.Text = "สถานะ: ออโต้ฟาร์มปิดใช้งาน"
+        toggleButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
     end
+
+    wait(0.5) -- Debounce delay
+    debounce = false
 end)
 
 -- Lock target
 lockTargetButton.MouseButton1Click:Connect(function()
+    if debounce then return end
+    debounce = true
+
     lockTarget = not lockTarget
     if lockTarget then
         statusLabel.Text = "สถานะ: ล็อกเป้าหมายเปิดใช้งาน"
+        lockTargetButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
     else
         statusLabel.Text = "สถานะ: ล็อกเป้าหมายปิดใช้งาน"
+        lockTargetButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
     end
+
+    wait(0.5) -- Debounce delay
+    debounce = false
 end)
 
 -- Auto-Farming Loop
 local function autoFarmLoop()
     while autoFarm do
-        wait()
+        wait(1) -- Add a delay to avoid high CPU usage
         pcall(function()
             -- Step 1: Find bots around the player
             local foundMob = false
-            for _, mob in pairs(workspace.Mobs.KingSandpod:GetChildren()) do
-                if mob.Name == "Fishman Karate User" and mob:FindFirstChild("HumanoidRootPart") then
-                    foundMob = true
-                    -- Step 2: Update UI with nearest bot information
-                    updateNearestTargetLabel()
-                    -- Step 3: Equip tool and teleport to the bot's location
-                    EP("Rifle")
-                    TP(mob.HumanoidRootPart.CFrame) -- Teleport to the mob's position
-                    -- Step 4: Shoot the bot
-                    shoot()
-                    break -- Stop searching once the target is found
-                end
-            end
-
-            if not foundMob then
-                statusLabel.Text = "สถานะ: ไม่พบบอทที่ต้องการ. รอการสร้างใหม่..."
-                wait(5) -- Wait before trying again
-            end
-        end)
-    end
-end
-
--- Start the auto-farming loop
-spawn(autoFarmLoop)
-
--- Handle input from both mouse and touch
-UserInputService.InputBegan:Connect(function(input, gameProcessed)
-    if gameProcessed then return end
-
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        if not shootingReady then
-            startAiming()
-        else
-            shoot()
-        end
-    end
-end)
