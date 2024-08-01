@@ -1,7 +1,12 @@
+-- Load external script for additional functionalities
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Noriko2000/Gpo/Lua/Good%20gpofree.lua"))()
+
+-- Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 
+-- Local player
 local localPlayer = Players.LocalPlayer
 
 -- Create Remote Events and Functions (done only once)
@@ -115,6 +120,7 @@ local function checkForErrors()
     end
 end
 
+-- Check for errors
 checkForErrors()
 
 -- Run Functions Every Frame
